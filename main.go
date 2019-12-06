@@ -7,27 +7,34 @@ import (
 	"encoding/base32"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 )
 
 func main() {
-	fmt.Println("hello world")
-}
-
-func computePubKey(priv string) (*rsa.PublicKey, error) {
-	block, buf := pem.Decode([]byte(priv))
-	if len(buf) > 0 {
-		return nil, fmt.Errorf("multiple blocks in pem?")
+	if len(os.Args[1:]) < 1 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <path-to-priv.pem>\n", os.Args[0])
+		os.Exit(-1)
 	}
-	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 
+	filePath := os.Args[1]
+	pem, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(-1)
 	}
-	return &key.PublicKey, nil
+
+	addr, err := ComputeAddr(pem)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(-1)
+	}
+
+	fmt.Printf("tor address: %s\n", addr)
 }
 
-func ComputeAddr(priv string) (string, error) {
+func ComputeAddr(priv []byte) (string, error) {
 	pubKey, err := computePubKey(priv)
 	if err != nil {
 		return "", err
@@ -38,6 +45,19 @@ func ComputeAddr(priv string) (string, error) {
 
 	// tor magic
 	return computeTorAddress(pubder), nil
+}
+
+func computePubKey(priv []byte) (*rsa.PublicKey, error) {
+	block, buf := pem.Decode(priv)
+	if len(buf) > 0 {
+		return nil, fmt.Errorf("multiple blocks in pem?")
+	}
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	if err != nil {
+		return nil, err
+	}
+	return &key.PublicKey, nil
 }
 
 func computeTorAddress(pubder []byte) string {

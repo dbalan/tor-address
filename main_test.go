@@ -25,7 +25,7 @@ rzu3974W1wsvmXAEOgi9WXzKZDRMqSKnW+VBmRt5JeI99LY=
 )
 
 func TestComputeKey(t *testing.T) {
-	cadd, err := ComputeAddr(privKey)
+	cadd, err := ComputeAddr([]byte(privKey))
 	if err != nil {
 		t.Error("error computing key")
 	}

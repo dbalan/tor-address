@@ -34,13 +34,16 @@ func main() {
 	fmt.Printf("tor address: %s\n", addr)
 }
 
+// Main function to compute tor address.
+// priv is a private key in PEM format ( --- RSA PRIVATE KEY --- block, usually)
 func ComputeAddr(priv []byte) (string, error) {
+	// Get the public key from private key
 	pubKey, err := computePubKey(priv)
 	if err != nil {
 		return "", err
 	}
 
-	// marshal key into DER
+	// marshal public key into PKCS1 DER
 	pubder := x509.MarshalPKCS1PublicKey(pubKey)
 
 	// tor magic
@@ -48,10 +51,13 @@ func ComputeAddr(priv []byte) (string, error) {
 }
 
 func computePubKey(priv []byte) (*rsa.PublicKey, error) {
+	// read pem block (fails if there are more blocks)
 	block, buf := pem.Decode(priv)
 	if len(buf) > 0 {
 		return nil, fmt.Errorf("multiple blocks in pem?")
 	}
+
+	// Parse key into a PKCS1Block
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 
 	if err != nil {
@@ -61,6 +67,8 @@ func computePubKey(priv []byte) (*rsa.PublicKey, error) {
 }
 
 func computeTorAddress(pubder []byte) string {
+	// compute hash of the pubkey and take first 10 bytes
+	// encode to base32
 	hs := sha1.New()
 	hs.Write(pubder)
 	hashed := hs.Sum(nil)

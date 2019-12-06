@@ -1,4 +1,4 @@
-# Onion V2 address
+# Compute Onion V2 address from RSA key
 
 Calcuates `onionv2` address from RSA private key.
 
